@@ -1,0 +1,233 @@
+:root {
+  color-scheme: dark;
+  --bg: #050514;
+  --bg-panel: #131326;
+  --border-subtle: #26263f;
+  --accent: #ff6ac1;
+  --accent-soft: rgba(255, 106, 193, 0.1);
+  --text-main: #f5f5ff;
+  --text-muted: #a2a2d0;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: radial-gradient(circle at top, #1f1640 0, #050514 45%, #02020a 100%);
+  color: var(--text-main);
+}
+
+.tryon-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.tryon-header {
+  max-width: 960px;
+  margin: 0 auto 1.5rem;
+}
+
+.tryon-header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.9rem;
+}
+
+.tryon-header p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.tryon-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.tryon-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tryon-right {
+  background: radial-gradient(circle at top, #252548, #101018);
+  border-radius: 1rem;
+  border: 1px solid var(--border-subtle);
+  padding: 0.75rem;
+  box-shadow: 0 18px 55px rgba(3, 0, 30, 0.7);
+}
+
+.tryon-panel {
+  background: var(--bg-panel);
+  border-radius: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-subtle);
+}
+
+.tryon-panel-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+.tryon-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.tryon-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.tryon-field span {
+  color: var(--text-muted);
+}
+
+.tryon-field input {
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  padding: 0.4rem 0.75rem;
+  background: rgba(1, 1, 12, 0.8);
+  color: var(--text-main);
+  outline: none;
+}
+
+.tryon-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-soft);
+}
+
+.tryon-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tryon-button {
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  padding: 0.4rem 0.9rem;
+  background: rgba(6, 6, 20, 0.95);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+}
+
+.tryon-button:hover {
+  background: rgba(13, 13, 40, 1);
+  transform: translateY(-1px);
+}
+
+.tryon-button-active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.tryon-garment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.tryon-garment-card {
+  border-radius: 0.9rem;
+  border: 1px solid var(--border-subtle);
+  background: radial-gradient(circle at top, #252548, #141425);
+  padding: 0.45rem 0.5rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  cursor: pointer;
+  color: var(--text-main);
+  font-size: 0.8rem;
+  text-align: left;
+  transition: transform 0.1s ease, box-shadow 0.15s ease, border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.tryon-garment-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 30px rgba(3, 0, 30, 0.55);
+}
+
+.tryon-garment-card-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-soft), 0 14px 40px rgba(3, 0, 30, 0.7);
+}
+
+.tryon-garment-thumb {
+  position: relative;
+  width: 100%;
+  padding-bottom: 72%;
+  border-radius: 0.7rem;
+  overflow: hidden;
+  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent),
+    linear-gradient(145deg, #191932, #090917);
+}
+
+.tryon-garment-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tryon-garment-label {
+  align-self: flex-start;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tryon-viewer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tryon-viewer canvas {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0.75rem;
+}
+
+.tryon-viewer-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.35rem;
+}
+
+@media (max-width: 900px) {
+  .tryon-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tryon-right {
+    min-height: 380px;
+  }
+}
+
