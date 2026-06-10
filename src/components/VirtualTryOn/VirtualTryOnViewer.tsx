@@ -9,8 +9,8 @@ export default function VirtualTryOnViewer({ measurements, selectedGarmentId, pr
   const garmentConfig = getClothingConfig(selectedGarmentId);
 
   return (
-    <div className="tryon-viewer">
-      <Canvas camera={{ position: [0, 1.6, 3], fov: 45 }}>
+    <div className="absolute inset-0 w-full h-full">
+      <Canvas camera={{ position: [0, 1.2, 3.5], fov: 45 }} style={{ touchAction: "none" }}>
         <color attach="background" args={['#101018']} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 10, 5]} intensity={0.9} />
@@ -23,6 +23,8 @@ export default function VirtualTryOnViewer({ measurements, selectedGarmentId, pr
               measurements={measurements}
               modelPath={garmentConfig.modelPath}
               offsetY={garmentConfig.offsetY}
+              offsetZ={garmentConfig.offsetZ}
+              scaleMult={garmentConfig.scaleMult}
               textureUrl={productImage}
             />
           </group>

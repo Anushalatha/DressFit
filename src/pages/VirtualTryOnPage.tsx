@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Upload, User, Ruler, Loader2, CheckCircle2, Scissors, ShoppingBag, Heart } from "lucide-react";
 import { products } from "@/data/mockData";
 import { tryOnAgent, tailoringAgent, type TryOnResult, type TailoringResult } from "@/services/aiAgents";
+import { miragicService } from "@/services/miragicService";
 import { useStore } from "@/store/useStore";
 import VirtualTryOnViewer from "../components/VirtualTryOn/VirtualTryOnViewer";
 import MiniGarmentViewer from "../components/VirtualTryOn/MiniGarmentViewer";
 
 const VirtualTryOnPage = () => {
-  const tryOnDresses = products.filter(p => ["4", "101", "102", "103", "104", "105", "106", "107", "108", "109", "110", "111"].includes(p.id));
+  const tryOnDresses = products.filter(p => ["4", "101", "102", "103", "104", "105", "106", "107", "108", "109", "110", "111", "112", "113", "114", "115", "116", "117"].includes(p.id));
   const [selectedProduct, setSelectedProduct] = useState(tryOnDresses[0] || products[0]);
   const [processing, setProcessing] = useState(false);
   const [processingMsg, setProcessingMsg] = useState("");
@@ -20,12 +21,20 @@ const VirtualTryOnPage = () => {
   const [waist, setWaist] = useState<number | "">(75);
   const [hips, setHips] = useState<number | "">(95);
 
+  const [humanPhoto, setHumanPhoto] = useState<File | null>(null);
+  const [humanPhotoPreview, setHumanPhotoPreview] = useState<string>("");
+  const [miragicResultUrl, setMiragicResultUrl] = useState<string>("");
+
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
   const [selectedSize, setSelectedSize] = useState<string>("");
   const { addToCart, addToWishlist, removeFromWishlist, isInWishlist } = useStore();
 
   // Update selected size when product changes
   useEffect(() => {
     setSelectedSize(selectedProduct.sizes[0] || "");
+    setMiragicResultUrl(""); // Reset logic on product change
+    setTryOnResult(null);
   }, [selectedProduct]);
 
   const idToGarmentId: Record<string, string> = {
@@ -41,10 +50,42 @@ const VirtualTryOnPage = () => {
     "109": "dress03",
     "110": "dress03",
     "111": "dress03",
+    "112": "tshirt01",
+    "113": "dress02",
+    "114": "tshirt01",
+    "115": "dress03", // Placeholder for jeans since there's no jeans mesh yet
+    "116": "dress01", // Placeholder for skirt
+    "117": "tshirt01", // Placeholder for button-down shirt
   };
 
 
   const handleTryOn = async () => {
+    if (selectedProduct.category === "Tops") {
+      if (!humanPhoto) {
+        alert("Please upload your photo to use the 2D Image Try-On Engine.");
+        return;
+      }
+      setProcessing(true);
+      setMiragicResultUrl("");
+      try {
+        setProcessingMsg("Starting Miragic Generative AI Job...");
+        const jobId = await miragicService.startTryOnJob(humanPhoto, selectedProduct.image);
+        const finalUrl = await miragicService.pollJobStatus(jobId, (msg) => setProcessingMsg(msg));
+        setMiragicResultUrl(finalUrl);
+        setTryOnResult({ // Mock details for UI coherence
+           fitConfidence: 96,
+           sizeRecommendation: "M - Perfect Fit Profile",
+           adjustments: ["Fits dynamically driven by Miragic AI"],
+           processingTime: 5
+        });
+      } catch (err: any) {
+        alert("Try-on failed: Make sure you put your real API Key in miragicService.ts! " + err.message);
+      } finally {
+        setProcessing(false);
+      }
+      return;
+    }
+
     setProcessing(true);
     setTryOnResult(null);
     setTailoringResult(null);
@@ -59,10 +100,19 @@ const VirtualTryOnPage = () => {
     setProcessing(false);
   };
 
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setHumanPhoto(file);
+      setHumanPhotoPreview(URL.createObjectURL(file));
+      setMiragicResultUrl(""); // Reset previous attempt
+    }
+  };
+
   const handleTailoring = async () => {
     setShowTailoring(true);
     setProcessingMsg("AI Tailoring Agent Optimizing Fit...");
-    const result = await tailoringAgent();
+    const result = await tailoringAgent(selectedProduct);
     setTailoringResult(result);
   };
 
@@ -83,9 +133,16 @@ const VirtualTryOnPage = () => {
               <h3 className="font-display font-semibold mb-4 flex items-center gap-2">
                 <Upload className="w-4 h-4 text-primary" /> Upload Photo
               </h3>
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/40 transition-colors">
-                <User className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Click to upload or drag & drop</p>
+              <input type="file" ref={photoInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+              <div onClick={() => photoInputRef.current?.click()} className="border-2 border-dashed border-border rounded-lg p-3 text-center cursor-pointer hover:border-primary/40 transition-colors">
+                {humanPhotoPreview ? (
+                   <img src={humanPhotoPreview} alt="User" className="mx-auto max-h-32 object-contain rounded" />
+                ) : (
+                  <>
+                    <User className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Click to upload your full-body photo</p>
+                  </>
+                )}
               </div>
             </div>
 
@@ -132,65 +189,99 @@ const VirtualTryOnPage = () => {
                     </motion.div>
                   ) : (
                     <motion.div key="result" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="absolute inset-0 flex flex-col">
-                      <div className="flex-1 relative w-full h-full min-h-[400px]">
-                        <VirtualTryOnViewer
-                          measurements={{
-                            height: Number(height) || 170,
-                            bust: Number(chest) || 90,
-                            waist: Number(waist) || 75,
-                            hips: Number(hips) || 95
-                          }}
-                          selectedGarmentId={idToGarmentId[selectedProduct?.id] || "dress01"}
-                          productImage={selectedProduct?.image}
-                        />
-                      </div>
-                      {tryOnResult && (
-                        <div className="absolute bottom-4 left-4 right-4">
-                          <div className="glass-card p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs text-muted-foreground">Fit Confidence</span>
-                              <span className="font-display font-bold text-primary text-lg">{tryOnResult.fitConfidence}%</span>
-                            </div>
-                            <div className="w-full bg-muted rounded-full h-2">
-                              <motion.div initial={{ width: 0 }} animate={{ width: `${tryOnResult.fitConfidence}%` }} transition={{ duration: 1 }} className="h-2 rounded-full" style={{ background: "var(--gradient-primary)" }} />
-                            </div>
-                            <p className="text-xs text-accent mt-2 flex items-center gap-1 mb-4">
-                              <CheckCircle2 className="w-3 h-3" /> {tryOnResult.sizeRecommendation}
-                            </p>
-                            <div className="pt-3 border-t border-border/50 flex flex-col gap-2">
-                              <div className="flex items-center justify-between">
-                                <span className="font-display font-bold">${selectedProduct.price}</span>
-                                <select
-                                  aria-label="Select size"
-                                  className="bg-muted text-xs rounded-md px-2 py-1 border border-border"
-                                  value={selectedSize}
-                                  onChange={(e) => setSelectedSize(e.target.value)}
-                                >
-                                  {selectedProduct.sizes.map(size => (
-                                    <option key={size} value={size}>{size}</option>
-                                  ))}
-                                </select>
+                      <div className="flex-1 relative w-full h-full min-h-[400px] flex items-center justify-center">
+                        {selectedProduct?.category === 'Dresses' || selectedProduct?.category === 'Bottoms' ? (
+                          // 3D VIEWER: Used for Skirts & Dresses
+                          <VirtualTryOnViewer
+                            measurements={{
+                              height: Number(height) || 170,
+                              bust: Number(chest) || 90,
+                              waist: Number(waist) || 75,
+                              hips: Number(hips) || 95
+                            }}
+                            selectedGarmentId={idToGarmentId[selectedProduct?.id] || "dress01"}
+                            productImage={selectedProduct?.image}
+                          />
+                        ) : (
+                          // 2D VIEWER (NEW SCRIPT): Used for Shirts & Tops
+                          miragicResultUrl ? (
+                             <img src={miragicResultUrl} className="absolute inset-0 w-full h-full object-cover z-10" alt="Miragic Result" />
+                          ) : (
+                              <div className="text-center p-6 border-2 border-dashed border-primary/50 m-4 rounded-lg bg-background/50 backdrop-blur w-full h-full flex flex-col items-center justify-center">
+                                <h4 className="font-display font-bold text-lg mb-2 flex items-center gap-2">
+                                  <Sparkles className="w-5 h-5 text-primary"/> Miragic 2D Try-On
+                                </h4>
+                                <>
+                                  <p className="text-xs text-muted-foreground mb-4">
+                                    Select a top and upload your photo to map the <b>{selectedProduct?.name}</b> directly onto your body.
+                                  </p>
+                                  <div className="flex justify-center items-center gap-4 opacity-50 mt-4">
+                                     <img src={selectedProduct?.image} alt="Shirt" className="w-20 h-24 object-cover rounded shadow border border-border" />
+                                     <div className="text-2xl font-bold">+</div>
+                                     {humanPhotoPreview ? (
+                                         <img src={humanPhotoPreview} alt="User" className="w-20 h-24 object-cover rounded shadow border border-border" />
+                                     ) : (
+                                         <div className="w-20 h-24 bg-muted flex items-center justify-center rounded border border-border">
+                                           <User className="w-8 h-8 text-muted-foreground" />
+                                         </div>
+                                     )}
+                                  </div>
+                                </>
                               </div>
-                              <button
-                                onClick={() => addToCart({
-                                  id: selectedProduct.id,
-                                  name: selectedProduct.name,
-                                  price: selectedProduct.price,
-                                  image: selectedProduct.image,
-                                  size: selectedSize
-                                })}
-                                className="w-full btn-primary-gradient py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2"
-                              >
-                                <ShoppingBag className="w-4 h-4" /> Add to Cart
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                          )
+                        )}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
+
+              {/* FIT CONFIDENCE & ADD TO CART - Moved below the photo block so it doesn't overlap */}
+              <AnimatePresence>
+                {tryOnResult && !processing && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="mt-4 text-left">
+                    <div className="glass-card p-4 relative z-20">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-muted-foreground">Fit Confidence</span>
+                        <span className="font-display font-bold text-primary text-lg">{tryOnResult.fitConfidence}%</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${tryOnResult.fitConfidence}%` }} transition={{ duration: 1 }} className="h-2 rounded-full" style={{ background: "var(--gradient-primary)" }} />
+                      </div>
+                      <p className="text-xs text-accent mt-2 flex items-center gap-1 mb-4">
+                        <CheckCircle2 className="w-3 h-3" /> {tryOnResult.sizeRecommendation}
+                      </p>
+                      <div className="pt-3 border-t border-border/50 flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-display font-bold">${selectedProduct.price}</span>
+                          <select
+                            aria-label="Select size"
+                            className="bg-muted text-xs rounded-md px-2 py-1 border border-border"
+                            value={selectedSize}
+                            onChange={(e) => setSelectedSize(e.target.value)}
+                          >
+                            {selectedProduct.sizes.map(size => (
+                              <option key={size} value={size}>{size}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          onClick={() => addToCart({
+                            id: selectedProduct.id,
+                            name: selectedProduct.name,
+                            price: selectedProduct.price,
+                            image: selectedProduct.image,
+                            size: selectedSize
+                          })}
+                          className="w-full btn-primary-gradient py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all"
+                        >
+                          <ShoppingBag className="w-4 h-4" /> Add to Cart
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {tryOnResult && (
@@ -200,7 +291,7 @@ const VirtualTryOnPage = () => {
                 </button>
                 <AnimatePresence>
                   {showTailoring && tailoringResult && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="glass-card p-4 mt-4">
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="glass-card p-4 mt-4 text-left">
                       <h4 className="font-display text-sm font-semibold mb-3">AI Tailoring Adjustments</h4>
                       {tailoringResult.adjustments.map((a) => (
                         <div key={a.area} className="flex justify-between text-xs py-1.5 border-b border-border/30 last:border-0">
